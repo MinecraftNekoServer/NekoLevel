@@ -15,6 +15,30 @@ public class LevelCommand implements CommandExecutor {
         this.plugin = plugin;
         this.levelManager = plugin.getLevelManager();
     }
+    
+    /**
+     * 检查玩家是否可以升级
+     */
+    private void checkLevelUp(LevelManager.PlayerData playerData) {
+        long currentExp = levelManager.getPlayerExperience(playerData);
+        long expToNextLevel = levelManager.getExperienceToNextLevel(playerData);
+        int currentLevel = levelManager.getPlayerLevel(playerData);
+        int maxLevel = plugin.getConfig().getInt("max-level", 5000);
+        
+        // 如果已达到最高等级，不升级
+        if (currentLevel >= maxLevel) {
+            return;
+        }
+        
+        // 如果当前经验大于等于升级所需经验，则升级
+        if (currentExp >= expToNextLevel && expToNextLevel > 0) {
+            // 升级并清空经验
+            levelManager.setPlayerLevel(playerData, currentLevel + 1);
+            levelManager.setPlayerExperience(playerData, currentExp - expToNextLevel);
+            // 递归检查是否还能继续升级
+            checkLevelUp(playerData);
+        }
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -71,8 +95,14 @@ public class LevelCommand implements CommandExecutor {
                 try {
                     long exp = Long.parseLong(args[1]);
                     levelManager.setPlayerExperience(playerData, exp);
+                    // 检查是否可以升级
+                    checkLevelUp(playerData);
                     levelManager.savePlayerData(playerData);
                     player.sendMessage("§a已将你的经验设置为: §e" + exp);
+                    
+                    // 显示当前等级
+                    int currentLevel = levelManager.getPlayerLevel(playerData);
+                    player.sendMessage("§a当前等级: §e" + currentLevel);
                 } catch (NumberFormatException e) {
                     player.sendMessage("§c无效的经验数值");
                 }
