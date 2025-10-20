@@ -7,6 +7,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class NekoLevel extends JavaPlugin {
     private DatabaseManager databaseManager;
     private LevelManager levelManager;
+    private NekoLevelPlaceholderExpansion placeholderExpansion;
 
     @Override
     public void onEnable() {
@@ -20,6 +21,9 @@ public final class NekoLevel extends JavaPlugin {
         // 注册指令
         getCommand("nekolevel").setExecutor(new LevelCommand(this));
         
+        // 注册变量占位符
+        registerPlaceholderExpansion();
+        
         // 保存默认配置
         saveDefaultConfig();
     }
@@ -29,6 +33,18 @@ public final class NekoLevel extends JavaPlugin {
         // Plugin shutdown logic
         if (databaseManager != null) {
             databaseManager.closeConnection();
+        }
+        
+        // 注销变量占位符
+        if (placeholderExpansion != null) {
+            placeholderExpansion.unregister();
+        }
+    }
+    
+    private void registerPlaceholderExpansion() {
+        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            placeholderExpansion = new NekoLevelPlaceholderExpansion(this);
+            placeholderExpansion.register();
         }
     }
     

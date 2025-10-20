@@ -54,10 +54,10 @@ CREATE TABLE player_levels (
 
 ## 变量说明
 
-在其他插件中使用此插件时，可以通过以下方式获取玩家数据：
+在其他插件中使用此插件时，可以通过PlaceholderAPI使用以下变量：
 
-- `{nekolevel_level}` - 玩家当前等级
-- `{nekolevel_exp}` - 玩家当前经验
+- `%nekolevel_level%` - 玩家当前等级
+- `%nekolevel_exp%` - 玩家当前经验
 
 ## 开发信息
 
