@@ -56,14 +56,16 @@ public class NekoLevelPlaceholderExpansion extends PlaceholderExpansion {
                 int filledBlocks = (int) Math.round(progress * 10);
                 StringBuilder progressBar = new StringBuilder();
                 
-                // 添加蓝色方形字符表示已完成的部分
+                // 添加蓝色整体颜色代码和方形字符表示已完成的部分
+                progressBar.append("§b"); // 蓝色整体颜色代码
                 for (int i = 0; i < filledBlocks; i++) {
-                    progressBar.append("§b■"); // 蓝色方形
+                    progressBar.append("■");
                 }
                 
-                // 添加灰色方形字符表示未完成的部分
+                // 添加灰色整体颜色代码和方形字符表示未完成的部分
+                progressBar.append("§7"); // 灰色整体颜色代码
                 for (int i = filledBlocks; i < 10; i++) {
-                    progressBar.append("§7■"); // 灰色方形
+                    progressBar.append("■");
                 }
                 
                 return progressBar.toString();
