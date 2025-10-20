@@ -4,3 +4,9 @@ main: neko.nekoLevel.NekoLevel
 api-version: '1.18'
 authors: [ 不穿胖次の小奶猫 ]
 website: https://cnmsb.xin/
+
+commands:
+  nekolevel:
+    description: 管理玩家等级和经验
+    usage: /<command> [setlevel|setexp|reload] [参数]
+    permission: nekolevel.admin

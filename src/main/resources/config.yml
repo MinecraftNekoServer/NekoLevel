@@ -1,0 +1,12 @@
+# NekoLevel 配置文件
+
+# 最大等级限制
+max-level: 5000
+
+# 数据库配置
+database:
+  host: "localhost"
+  port: 3306
+  database: "neko_level"
+  username: "root"
+  password: "wcjs123"
