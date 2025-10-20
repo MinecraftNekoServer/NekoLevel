@@ -42,89 +42,192 @@ public class LevelCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("只有玩家可以使用此命令");
-            return true;
+        // 检查是否为玩家或控制台
+        Player targetPlayer = null;
+        String targetPlayerName = "";
+        
+        if (sender instanceof Player) {
+            Player player = (Player) sender;
+            
+            if (args.length == 0) {
+                // 显示当前等级和经验
+                var playerData = levelManager.getPlayerData(player.getUniqueId(), player.getName());
+                int level = levelManager.getPlayerLevel(playerData);
+                long experience = levelManager.getPlayerExperience(playerData);
+                player.sendMessage("§a当前等级: §e" + level);
+                player.sendMessage("§a当前经验: §e" + experience);
+                return true;
+            }
+            
+            // 检查是否有指定玩家名
+            if (args.length >= 2 && player.hasPermission("nekolevel.admin")) {
+                targetPlayer = plugin.getServer().getPlayer(args[1]);
+                if (targetPlayer != null) {
+                    targetPlayerName = targetPlayer.getName();
+                }
+            }
+            
+            // 如果没有指定玩家或玩家不在线，则操作自己
+            if (targetPlayer == null) {
+                targetPlayer = player;
+                targetPlayerName = player.getName();
+            }
+        } else {
+            // 控制台命令必须指定玩家名
+            if (args.length < 2) {
+                sender.sendMessage("§c控制台使用此命令必须指定玩家名");
+                sender.sendMessage("§c用法: /nekolevel <指令> <玩家名> [参数]");
+                return true;
+            }
+            
+            targetPlayer = plugin.getServer().getPlayer(args[1]);
+            if (targetPlayer == null) {
+                sender.sendMessage("§c玩家不在线或不存在");
+                return true;
+            }
+            targetPlayerName = targetPlayer.getName();
         }
 
-        Player player = (Player) sender;
-        var playerData = levelManager.getPlayerData(player.getUniqueId(), player.getName());
-
-        if (args.length == 0) {
-            // 显示当前等级和经验
-            int level = levelManager.getPlayerLevel(playerData);
-            long experience = levelManager.getPlayerExperience(playerData);
-            player.sendMessage("§a当前等级: §e" + level);
-            player.sendMessage("§a当前经验: §e" + experience);
-            return true;
-        }
+        var targetPlayerData = levelManager.getPlayerData(targetPlayer.getUniqueId(), targetPlayerName);
+        boolean isSelf = sender instanceof Player && ((Player) sender).getUniqueId().equals(targetPlayer.getUniqueId());
 
         switch (args[0].toLowerCase()) {
             case "setlevel":
                 if (args.length < 2) {
-                    player.sendMessage("§c用法: /nekolevel setlevel <等级>");
+                    sender.sendMessage("§c用法: /nekolevel setlevel <玩家名> <等级>");
                     return true;
                 }
                 
-                if (!player.hasPermission("nekolevel.admin")) {
-                    player.sendMessage("§c你没有权限使用此命令");
+                if (sender instanceof Player && !((Player) sender).hasPermission("nekolevel.admin")) {
+                    sender.sendMessage("§c你没有权限使用此命令");
                     return true;
                 }
                 
                 try {
-                    int level = Integer.parseInt(args[1]);
-                    levelManager.setPlayerLevel(playerData, level);
-                    levelManager.savePlayerData(playerData);
-                    player.sendMessage("§a已将你的等级设置为: §e" + level);
+                    int level = Integer.parseInt(args[args.length == 2 ? 1 : 2]);
+                    levelManager.setPlayerLevel(targetPlayerData, level);
+                    levelManager.savePlayerData(targetPlayerData);
+                    sender.sendMessage("§a已将玩家 " + targetPlayerName + " 的等级设置为: §e" + level);
+                    if (!isSelf) {
+                        targetPlayer.sendMessage("§a管理员已将你的等级设置为: §e" + level);
+                    }
                 } catch (NumberFormatException e) {
-                    player.sendMessage("§c无效的等级数值");
+                    sender.sendMessage("§c无效的等级数值");
+                }
+                break;
+                
+            case "addlevel":
+                if (args.length < 2) {
+                    sender.sendMessage("§c用法: /nekolevel addlevel <玩家名> <等级>");
+                    return true;
+                }
+                
+                if (sender instanceof Player && !((Player) sender).hasPermission("nekolevel.admin")) {
+                    sender.sendMessage("§c你没有权限使用此命令");
+                    return true;
+                }
+                
+                try {
+                    int level = Integer.parseInt(args[args.length == 2 ? 1 : 2]);
+                    int currentLevel = levelManager.getPlayerLevel(targetPlayerData);
+                    levelManager.setPlayerLevel(targetPlayerData, currentLevel + level);
+                    levelManager.savePlayerData(targetPlayerData);
+                    sender.sendMessage("§a已将玩家 " + targetPlayerName + " 的等级增加了: §e" + level);
+                    sender.sendMessage("§a当前等级: §e" + levelManager.getPlayerLevel(targetPlayerData));
+                    if (!isSelf) {
+                        targetPlayer.sendMessage("§a管理员已将你的等级增加了: §e" + level);
+                        targetPlayer.sendMessage("§a当前等级: §e" + levelManager.getPlayerLevel(targetPlayerData));
+                    }
+                } catch (NumberFormatException e) {
+                    sender.sendMessage("§c无效的等级数值");
                 }
                 break;
                 
             case "setexp":
                 if (args.length < 2) {
-                    player.sendMessage("§c用法: /nekolevel setexp <经验>");
+                    sender.sendMessage("§c用法: /nekolevel setexp <玩家名> <经验>");
                     return true;
                 }
                 
-                if (!player.hasPermission("nekolevel.admin")) {
-                    player.sendMessage("§c你没有权限使用此命令");
+                if (sender instanceof Player && !((Player) sender).hasPermission("nekolevel.admin")) {
+                    sender.sendMessage("§c你没有权限使用此命令");
                     return true;
                 }
                 
                 try {
-                    long exp = Long.parseLong(args[1]);
-                    levelManager.setPlayerExperience(playerData, exp);
+                    long exp = Long.parseLong(args[args.length == 2 ? 1 : 2]);
+                    levelManager.setPlayerExperience(targetPlayerData, exp);
                     // 检查是否可以升级
-                    checkLevelUp(playerData);
-                    levelManager.savePlayerData(playerData);
-                    player.sendMessage("§a已将你的经验设置为: §e" + exp);
+                    checkLevelUp(targetPlayerData);
+                    levelManager.savePlayerData(targetPlayerData);
+                    sender.sendMessage("§a已将玩家 " + targetPlayerName + " 的经验设置为: §e" + exp);
                     
                     // 显示当前等级
-                    int currentLevel = levelManager.getPlayerLevel(playerData);
-                    player.sendMessage("§a当前等级: §e" + currentLevel);
+                    int currentLevel = levelManager.getPlayerLevel(targetPlayerData);
+                    sender.sendMessage("§a当前等级: §e" + currentLevel);
+                    if (!isSelf) {
+                        targetPlayer.sendMessage("§a管理员已将你的经验设置为: §e" + exp);
+                        targetPlayer.sendMessage("§a当前等级: §e" + currentLevel);
+                    }
                 } catch (NumberFormatException e) {
-                    player.sendMessage("§c无效的经验数值");
+                    sender.sendMessage("§c无效的经验数值");
+                }
+                break;
+                
+            case "addexp":
+                if (args.length < 2) {
+                    sender.sendMessage("§c用法: /nekolevel addexp <玩家名> <经验>");
+                    return true;
+                }
+                
+                if (sender instanceof Player && !((Player) sender).hasPermission("nekolevel.admin")) {
+                    sender.sendMessage("§c你没有权限使用此命令");
+                    return true;
+                }
+                
+                try {
+                    long exp = Long.parseLong(args[args.length == 2 ? 1 : 2]);
+                    long currentExp = levelManager.getPlayerExperience(targetPlayerData);
+                    levelManager.setPlayerExperience(targetPlayerData, currentExp + exp);
+                    // 检查是否可以升级
+                    checkLevelUp(targetPlayerData);
+                    levelManager.savePlayerData(targetPlayerData);
+                    sender.sendMessage("§a已将玩家 " + targetPlayerName + " 的经验增加了: §e" + exp);
+                    
+                    // 显示当前等级和经验
+                    int currentLevel = levelManager.getPlayerLevel(targetPlayerData);
+                    long newExp = levelManager.getPlayerExperience(targetPlayerData);
+                    sender.sendMessage("§a当前等级: §e" + currentLevel);
+                    sender.sendMessage("§a当前经验: §e" + newExp);
+                    if (!isSelf) {
+                        targetPlayer.sendMessage("§a管理员已将你的经验增加了: §e" + exp);
+                        targetPlayer.sendMessage("§a当前等级: §e" + currentLevel);
+                        targetPlayer.sendMessage("§a当前经验: §e" + newExp);
+                    }
+                } catch (NumberFormatException e) {
+                    sender.sendMessage("§c无效的经验数值");
                 }
                 break;
                 
             case "reload":
-                if (!player.hasPermission("nekolevel.admin")) {
-                    player.sendMessage("§c你没有权限使用此命令");
+                if (sender instanceof Player && !((Player) sender).hasPermission("nekolevel.admin")) {
+                    sender.sendMessage("§c你没有权限使用此命令");
                     return true;
                 }
                 
                 plugin.reloadConfig();
-                player.sendMessage("§a配置文件已重新加载");
+                sender.sendMessage("§a配置文件已重新加载");
                 break;
                 
             default:
-                player.sendMessage("§c未知子命令");
-                player.sendMessage("§a可用命令:");
-                player.sendMessage("§e/nekolevel - 查看当前等级和经验");
-                player.sendMessage("§e/nekolevel setlevel <等级> - 设置等级");
-                player.sendMessage("§e/nekolevel setexp <经验> - 设置经验");
-                player.sendMessage("§e/nekolevel reload - 重新加载配置文件");
+                sender.sendMessage("§c未知子命令");
+                sender.sendMessage("§a可用命令:");
+                sender.sendMessage("§e/nekolevel - 查看当前等级和经验");
+                sender.sendMessage("§e/nekolevel setlevel <玩家名> <等级> - 设置等级");
+                sender.sendMessage("§e/nekolevel addlevel <玩家名> <等级> - 增加等级");
+                sender.sendMessage("§e/nekolevel setexp <玩家名> <经验> - 设置经验");
+                sender.sendMessage("§e/nekolevel addexp <玩家名> <经验> - 增加经验");
+                sender.sendMessage("§e/nekolevel reload - 重新加载配置文件");
                 break;
         }
         
