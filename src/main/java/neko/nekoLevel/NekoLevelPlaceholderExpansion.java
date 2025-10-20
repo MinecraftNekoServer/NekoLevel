@@ -48,6 +48,8 @@ public class NekoLevelPlaceholderExpansion extends PlaceholderExpansion {
                 return String.valueOf(levelManager.getPlayerLevel(playerData));
             case "exp":
                 return String.valueOf(levelManager.getPlayerExperience(playerData));
+            case "next_exp":
+                return String.valueOf(levelManager.getExperienceToNextLevel(playerData));
             default:
                 return null;
         }

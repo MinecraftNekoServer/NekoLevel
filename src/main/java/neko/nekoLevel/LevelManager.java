@@ -140,6 +140,22 @@ public class LevelManager {
     }
     
     /**
+     * 获取升级到下一级所需的经验
+     */
+    public long getExperienceToNextLevel(PlayerData data) {
+        int currentLevel = data.getLevel();
+        int maxLevel = config.getInt("max-level", 5000);
+        
+        // 如果已达到最高等级，返回0
+        if (currentLevel >= maxLevel) {
+            return 0;
+        }
+        
+        // 简单的线性增长公式：下一级所需经验 = 当前等级 * 100
+        return (currentLevel + 1) * 100;
+    }
+    
+    /**
      * 设置玩家等级
      */
     public void setPlayerLevel(PlayerData data, int level) {

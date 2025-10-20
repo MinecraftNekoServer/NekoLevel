@@ -58,6 +58,7 @@ CREATE TABLE player_levels (
 
 - `%nekolevel_level%` - 玩家当前等级
 - `%nekolevel_exp%` - 玩家当前经验
+- `%nekolevel_next_exp%` - 升级到下一级所需的经验值
 
 ## 开发信息
 
