@@ -35,6 +35,17 @@ public class LevelCommand implements CommandExecutor {
             // 升级并清空经验
             levelManager.setPlayerLevel(playerData, currentLevel + 1);
             levelManager.setPlayerExperience(playerData, currentExp - expToNextLevel);
+            
+            // 获取玩家对象
+            Player player = plugin.getServer().getPlayer(playerData.getUuid());
+            if (player != null && player.isOnline()) {
+                // 发送升级消息
+                player.sendMessage("§a恭喜你升级了！当前等级: §e" + (currentLevel + 1));
+                
+                // 播放经验音效
+                player.playSound(player.getLocation(), "entity.player.levelup", 1.0f, 1.0f);
+            }
+            
             // 递归检查是否还能继续升级
             checkLevelUp(playerData);
         }
