@@ -200,9 +200,7 @@ public class LevelCommand implements CommandExecutor {
                     sender.sendMessage("§a当前等级: §e" + currentLevel);
                     sender.sendMessage("§a当前经验: §e" + newExp);
                     if (!isSelf) {
-                        targetPlayer.sendMessage("§a管理员已将你的经验增加了: §e" + exp);
-                        targetPlayer.sendMessage("§a当前等级: §e" + currentLevel);
-                        targetPlayer.sendMessage("§a当前经验: §e" + newExp);
+                        targetPlayer.sendMessage("§a你获得了 §e" + exp + " §a点经验");
                     }
                 } catch (NumberFormatException e) {
                     sender.sendMessage("§c无效的经验数值");

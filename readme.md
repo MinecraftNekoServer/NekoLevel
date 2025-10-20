@@ -59,6 +59,7 @@ CREATE TABLE player_levels (
 - `%nekolevel_level%` - 玩家当前等级
 - `%nekolevel_exp%` - 玩家当前经验
 - `%nekolevel_next_exp%` - 升级到下一级所需的经验值
+- `%nekolevel_progress%` - 升级进度条（蓝色和灰色方块组成的10字符进度条）
 
 ## 开发信息
 

@@ -50,6 +50,23 @@ public class NekoLevelPlaceholderExpansion extends PlaceholderExpansion {
                 return String.valueOf(levelManager.getPlayerExperience(playerData));
             case "next_exp":
                 return String.valueOf(levelManager.getExperienceToNextLevel(playerData));
+            case "progress":
+                // 创建20个字符的进度条，使用方形符号
+                double progress = levelManager.getLevelProgress(playerData);
+                int filledBlocks = (int) Math.round(progress * 20);
+                StringBuilder progressBar = new StringBuilder();
+                
+                // 添加蓝色方形字符表示已完成的部分
+                for (int i = 0; i < filledBlocks; i++) {
+                    progressBar.append("§b■"); // 蓝色方形
+                }
+                
+                // 添加灰色方形字符表示未完成的部分
+                for (int i = filledBlocks; i < 20; i++) {
+                    progressBar.append("§7■"); // 灰色方形
+                }
+                
+                return progressBar.toString();
             default:
                 return null;
         }

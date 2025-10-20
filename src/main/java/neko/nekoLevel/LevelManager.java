@@ -156,6 +156,22 @@ public class LevelManager {
     }
     
     /**
+     * 获取当前经验距离下一级的进度 (0.0 - 1.0)
+     */
+    public double getLevelProgress(PlayerData data) {
+        long currentExp = data.getExperience();
+        long expToNextLevel = getExperienceToNextLevel(data);
+        
+        // 如果已达到最高等级或下一级经验为0，返回1.0
+        if (expToNextLevel <= 0) {
+            return 1.0;
+        }
+        
+        // 计算进度比例
+        return Math.min(1.0, (double) currentExp / expToNextLevel);
+    }
+    
+    /**
      * 设置玩家等级
      */
     public void setPlayerLevel(PlayerData data, int level) {
