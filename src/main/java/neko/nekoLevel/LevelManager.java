@@ -151,8 +151,9 @@ public class LevelManager {
             return 0;
         }
         
-        // 简单的线性增长公式：下一级所需经验 = 当前等级 * 100
-        return (currentLevel + 1) * 100;
+        // 指数增长公式：下一级所需经验 = 100 * (当前等级^2)
+        // 这样随着等级提升，升级所需经验会显著增加
+        return 100L * (long) Math.pow(currentLevel + 1, 2);
     }
     
     /**

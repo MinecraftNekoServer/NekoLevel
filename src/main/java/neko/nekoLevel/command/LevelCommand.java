@@ -62,7 +62,7 @@ public class LevelCommand implements CommandExecutor {
             
             if (args.length == 0) {
                 // 显示当前等级和经验
-                var playerData = levelManager.getPlayerData(player.getUniqueId(), player.getName());
+                LevelManager.PlayerData playerData = levelManager.getPlayerData(player.getUniqueId(), player.getName());
                 int level = levelManager.getPlayerLevel(playerData);
                 long experience = levelManager.getPlayerExperience(playerData);
                 player.sendMessage("§a当前等级: §e" + level);
@@ -99,7 +99,7 @@ public class LevelCommand implements CommandExecutor {
             targetPlayerName = targetPlayer.getName();
         }
 
-        var targetPlayerData = levelManager.getPlayerData(targetPlayer.getUniqueId(), targetPlayerName);
+        LevelManager.PlayerData targetPlayerData = levelManager.getPlayerData(targetPlayer.getUniqueId(), targetPlayerName);
         boolean isSelf = sender instanceof Player && ((Player) sender).getUniqueId().equals(targetPlayer.getUniqueId());
 
         switch (args[0].toLowerCase()) {

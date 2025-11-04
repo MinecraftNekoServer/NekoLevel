@@ -36,8 +36,8 @@ public class NekoLevelPlaceholderExpansion extends PlaceholderExpansion {
             return "";
         }
 
-        var levelManager = plugin.getLevelManager();
-        var playerData = levelManager.getPlayerData(player.getUniqueId(), player.getName());
+        LevelManager levelManager = plugin.getLevelManager();
+        LevelManager.PlayerData playerData = levelManager.getPlayerData(player.getUniqueId(), player.getName());
 
         if (playerData == null) {
             return "";
