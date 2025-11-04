@@ -3,20 +3,16 @@ package neko.nekoLevel;
 import neko.nekoLevel.database.DatabaseManager;
 import org.bukkit.configuration.file.FileConfiguration;
 import java.sql.*;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 public class LevelManager {
     private final NekoLevel plugin;
     private final DatabaseManager databaseManager;
-    private final Map<UUID, PlayerData> playerDataMap;
     private final FileConfiguration config;
     
     public LevelManager(NekoLevel plugin, DatabaseManager databaseManager) {
         this.plugin = plugin;
         this.databaseManager = databaseManager;
-        this.playerDataMap = new HashMap<>();
         this.config = plugin.getConfig();
         
         // 初始化配置
@@ -26,24 +22,28 @@ public class LevelManager {
     public static class PlayerData {
         private int level;
         private long experience;
+        private int commandPriority;
         private final String name;
         private final UUID uuid;
         
-        public PlayerData(UUID uuid, String name, int level, long experience) {
+        public PlayerData(UUID uuid, String name, int level, long experience, int commandPriority) {
             this.uuid = uuid;
             this.name = name;
             this.level = level;
             this.experience = experience;
+            this.commandPriority = commandPriority;
         }
         
         // Getters and setters
         public int getLevel() { return level; }
         public long getExperience() { return experience; }
+        public int getCommandPriority() { return commandPriority; }
         public String getName() { return name; }
         public UUID getUuid() { return uuid; }
         
         public void setLevel(int level) { this.level = level; }
         public void setExperience(long experience) { this.experience = experience; }
+        public void setCommandPriority(int priority) { this.commandPriority = priority; }
         public void addExperience(long exp) { this.experience += exp; }
     }
     
@@ -51,23 +51,15 @@ public class LevelManager {
      * 获取玩家数据
      */
     public PlayerData getPlayerData(UUID uuid, String name) {
-        // 先从内存中获取
-        PlayerData data = playerDataMap.get(uuid);
-        if (data == null) {
-            // 从数据库加载
-            data = loadPlayerData(uuid, name);
-            if (data != null) {
-                playerDataMap.put(uuid, data);
-            }
-        }
-        return data;
+        // 直接从数据库加载，不使用内存缓存
+        return loadPlayerData(uuid, name);
     }
     
     /**
      * 从数据库加载玩家数据
      */
     private PlayerData loadPlayerData(UUID uuid, String name) {
-        String sql = "SELECT level, experience FROM player_levels WHERE uuid = ?";
+        String sql = "SELECT level, experience, command_priority FROM player_levels WHERE uuid = ?";
         try (Connection conn = databaseManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -77,7 +69,8 @@ public class LevelManager {
             if (rs.next()) {
                 int level = rs.getInt("level");
                 long experience = rs.getLong("experience");
-                return new PlayerData(uuid, name, level, experience);
+                int commandPriority = rs.getInt("command_priority");
+                return new PlayerData(uuid, name, level, experience, commandPriority);
             } else {
                 // 玩家不存在，创建新记录
                 return createNewPlayerData(uuid, name);
@@ -92,7 +85,7 @@ public class LevelManager {
      * 创建新玩家数据
      */
     private PlayerData createNewPlayerData(UUID uuid, String name) {
-        String sql = "INSERT INTO player_levels (uuid, name, level, experience) VALUES (?, ?, 1, 0)";
+        String sql = "INSERT INTO player_levels (uuid, name, level, experience, command_priority) VALUES (?, ?, 1, 0, 0)";
         try (Connection conn = databaseManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -100,7 +93,7 @@ public class LevelManager {
             stmt.setString(2, name);
             stmt.executeUpdate();
             
-            return new PlayerData(uuid, name, 1, 0);
+            return new PlayerData(uuid, name, 1, 0, 0);
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
@@ -111,14 +104,15 @@ public class LevelManager {
      * 保存玩家数据到数据库
      */
     public void savePlayerData(PlayerData data) {
-        String sql = "UPDATE player_levels SET name = ?, level = ?, experience = ? WHERE uuid = ?";
+        String sql = "INSERT INTO player_levels (uuid, name, level, experience) VALUES (?, ?, ?, ?) " +
+                     "ON DUPLICATE KEY UPDATE name = VALUES(name), level = VALUES(level), experience = VALUES(experience)";
         try (Connection conn = databaseManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            stmt.setString(1, data.getName());
-            stmt.setInt(2, data.getLevel());
-            stmt.setLong(3, data.getExperience());
-            stmt.setString(4, data.getUuid().toString());
+            stmt.setString(1, data.getUuid().toString());
+            stmt.setString(2, data.getName());
+            stmt.setInt(3, data.getLevel());
+            stmt.setLong(4, data.getExperience());
             stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();

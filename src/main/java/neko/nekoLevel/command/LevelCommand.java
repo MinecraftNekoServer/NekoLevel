@@ -67,6 +67,9 @@ public class LevelCommand implements CommandExecutor {
                 long experience = levelManager.getPlayerExperience(playerData);
                 player.sendMessage("§a当前等级: §e" + level);
                 player.sendMessage("§a当前经验: §e" + experience);
+                // 显示指令优先级
+                int commandPriority = playerData.getCommandPriority();
+                player.sendMessage("§a指令优先级: §e" + commandPriority);
                 return true;
             }
             
@@ -99,6 +102,7 @@ public class LevelCommand implements CommandExecutor {
             targetPlayerName = targetPlayer.getName();
         }
 
+        // 每次操作都从数据库重新加载数据，确保实时性
         LevelManager.PlayerData targetPlayerData = levelManager.getPlayerData(targetPlayer.getUniqueId(), targetPlayerName);
         boolean isSelf = sender instanceof Player && ((Player) sender).getUniqueId().equals(targetPlayer.getUniqueId());
 
@@ -116,11 +120,13 @@ public class LevelCommand implements CommandExecutor {
                 
                 try {
                     int level = Integer.parseInt(args[args.length == 2 ? 1 : 2]);
-                    levelManager.setPlayerLevel(targetPlayerData, level);
-                    levelManager.savePlayerData(targetPlayerData);
+                    // 从数据库重新加载数据以确保实时性
+                    LevelManager.PlayerData freshData = levelManager.getPlayerData(targetPlayer.getUniqueId(), targetPlayerName);
+                    levelManager.setPlayerLevel(freshData, level);
+                    levelManager.savePlayerData(freshData);
                     sender.sendMessage("§a已将玩家 " + targetPlayerName + " 的等级设置为: §e" + level);
                     if (!isSelf) {
-                        targetPlayer.sendMessage("§a管理员已将你的等级设置为: §e" + level);
+                        targetPlayer.sendMessage("§a恭喜你，等级直升到: §e" + level);
                     }
                 } catch (NumberFormatException e) {
                     sender.sendMessage("§c无效的等级数值");
@@ -140,14 +146,16 @@ public class LevelCommand implements CommandExecutor {
                 
                 try {
                     int level = Integer.parseInt(args[args.length == 2 ? 1 : 2]);
-                    int currentLevel = levelManager.getPlayerLevel(targetPlayerData);
-                    levelManager.setPlayerLevel(targetPlayerData, currentLevel + level);
-                    levelManager.savePlayerData(targetPlayerData);
+                    // 从数据库重新加载数据以确保实时性
+                    LevelManager.PlayerData freshData = levelManager.getPlayerData(targetPlayer.getUniqueId(), targetPlayerName);
+                    int currentLevel = levelManager.getPlayerLevel(freshData);
+                    levelManager.setPlayerLevel(freshData, currentLevel + level);
+                    levelManager.savePlayerData(freshData);
                     sender.sendMessage("§a已将玩家 " + targetPlayerName + " 的等级增加了: §e" + level);
-                    sender.sendMessage("§a当前等级: §e" + levelManager.getPlayerLevel(targetPlayerData));
+                    sender.sendMessage("§a当前等级: §e" + levelManager.getPlayerLevel(freshData));
                     if (!isSelf) {
-                        targetPlayer.sendMessage("§a管理员已将你的等级增加了: §e" + level);
-                        targetPlayer.sendMessage("§a当前等级: §e" + levelManager.getPlayerLevel(targetPlayerData));
+                        targetPlayer.sendMessage("§a恭喜你，升级啦！ §e" + level);
+                        targetPlayer.sendMessage("§a当前等级: §e" + levelManager.getPlayerLevel(freshData));
                     }
                 } catch (NumberFormatException e) {
                     sender.sendMessage("§c无效的等级数值");
@@ -167,17 +175,19 @@ public class LevelCommand implements CommandExecutor {
                 
                 try {
                     long exp = Long.parseLong(args[args.length == 2 ? 1 : 2]);
-                    levelManager.setPlayerExperience(targetPlayerData, exp);
+                    // 从数据库重新加载数据以确保实时性
+                    LevelManager.PlayerData freshData = levelManager.getPlayerData(targetPlayer.getUniqueId(), targetPlayerName);
+                    levelManager.setPlayerExperience(freshData, exp);
                     // 检查是否可以升级
-                    checkLevelUp(targetPlayerData);
-                    levelManager.savePlayerData(targetPlayerData);
+                    checkLevelUp(freshData);
+                    levelManager.savePlayerData(freshData);
                     sender.sendMessage("§a已将玩家 " + targetPlayerName + " 的经验设置为: §e" + exp);
                     
                     // 显示当前等级
-                    int currentLevel = levelManager.getPlayerLevel(targetPlayerData);
+                    int currentLevel = levelManager.getPlayerLevel(freshData);
                     sender.sendMessage("§a当前等级: §e" + currentLevel);
                     if (!isSelf) {
-                        targetPlayer.sendMessage("§a管理员已将你的经验设置为: §e" + exp);
+                        targetPlayer.sendMessage("§a恭喜你，获得经验: §e" + exp);
                         targetPlayer.sendMessage("§a当前等级: §e" + currentLevel);
                     }
                 } catch (NumberFormatException e) {
@@ -198,16 +208,18 @@ public class LevelCommand implements CommandExecutor {
                 
                 try {
                     long exp = Long.parseLong(args[args.length == 2 ? 1 : 2]);
-                    long currentExp = levelManager.getPlayerExperience(targetPlayerData);
-                    levelManager.setPlayerExperience(targetPlayerData, currentExp + exp);
+                    // 从数据库重新加载数据以确保实时性
+                    LevelManager.PlayerData freshData = levelManager.getPlayerData(targetPlayer.getUniqueId(), targetPlayerName);
+                    long currentExp = levelManager.getPlayerExperience(freshData);
+                    levelManager.setPlayerExperience(freshData, currentExp + exp);
                     // 检查是否可以升级
-                    checkLevelUp(targetPlayerData);
-                    levelManager.savePlayerData(targetPlayerData);
+                    checkLevelUp(freshData);
+                    levelManager.savePlayerData(freshData);
                     sender.sendMessage("§a已将玩家 " + targetPlayerName + " 的经验增加了: §e" + exp);
                     
                     // 显示当前等级和经验
-                    int currentLevel = levelManager.getPlayerLevel(targetPlayerData);
-                    long newExp = levelManager.getPlayerExperience(targetPlayerData);
+                    int currentLevel = levelManager.getPlayerLevel(freshData);
+                    long newExp = levelManager.getPlayerExperience(freshData);
                     sender.sendMessage("§a当前等级: §e" + currentLevel);
                     sender.sendMessage("§a当前经验: §e" + newExp);
                     if (!isSelf) {
