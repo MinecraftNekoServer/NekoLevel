@@ -145,9 +145,19 @@ public class LevelManager {
             return 0;
         }
         
-        // 指数增长公式：下一级所需经验 = 100 * (当前等级^2)
-        // 这样随着等级提升，升级所需经验会显著增加
-        return 100L * (long) Math.pow(currentLevel + 1, 2);
+        // 参考Hypixel的升级系统，使用平滑的多项式函数来平衡低等级和高等级的升级难度
+        if (currentLevel < 100) {
+            // 前100级：平滑的线性增长，逐渐增加难度
+            return 500L + (long)currentLevel * 100L;
+        } else if (currentLevel < 500) {
+            // 100-500级：平滑的多项式增长
+            double base = currentLevel - 99;
+            return (long)(base * base * 8.0) + 15000;
+        } else {
+            // 500级以上：更平滑的指数增长
+            double base = currentLevel - 499;
+            return (long)(base * base * 20.0) + 100000;
+        }
     }
     
     /**
