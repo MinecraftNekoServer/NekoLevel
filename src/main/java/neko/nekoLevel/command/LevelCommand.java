@@ -63,14 +63,18 @@ public class LevelCommand implements CommandExecutor {
             
             if (args.length == 0) {
                 // 显示当前等级和经验
-                LevelManager.PlayerData playerData = levelManager.getPlayerData(player.getUniqueId(), player.getName());
-                int level = levelManager.getPlayerLevel(playerData);
-                long currentExp = levelManager.getPlayerExperience(playerData);
-                long expToNext = levelManager.getExperienceToNextLevel(playerData);
-                player.sendMessage("§a当前等级: §e" + level);
-                player.sendMessage("§a当前经验: §e" + ExperienceFormatter.formatExperience(currentExp, expToNext));
-                // 显示指令优先级
-                int commandPriority = playerData.getCommandPriority();
+                LevelManager.PlayerData playerData = levelManager.getPlayerData(player.getUniqueId(), player.getName());
+                int level = levelManager.getPlayerLevel(playerData);
+                long currentExp = levelManager.getPlayerExperience(playerData);
+                long expToNext = levelManager.getExperienceToNextLevel(playerData);
+                player.sendMessage("§a当前等级: §e" + level);
+                if (expToNext > 0) {
+                    player.sendMessage("§a当前经验: §e" + ExperienceFormatter.formatExperience(currentExp, expToNext));
+                } else {
+                    player.sendMessage("§a当前经验: §e" + ExperienceFormatter.formatExperience(currentExp));
+                }
+                // 显示指令优先级
+                int commandPriority = playerData.getCommandPriority();
                 player.sendMessage("§a指令优先级: §e" + commandPriority);
                 return true;
             }
@@ -219,12 +223,16 @@ public class LevelCommand implements CommandExecutor {
                     levelManager.savePlayerData(freshData);
                     sender.sendMessage("§a已将玩家 " + targetPlayerName + " 的经验增加了: §e" + exp);
                     
-                    // 显示当前等级和经验
-                    int currentLevel = levelManager.getPlayerLevel(freshData);
-                    long newExp = levelManager.getPlayerExperience(freshData);
-                    sender.sendMessage("§a当前等级: §e" + currentLevel);
-                    long expToNext = levelManager.getExperienceToNextLevel(freshData);
-                    sender.sendMessage("§a当前经验: §e" + ExperienceFormatter.formatExperience(newExp, expToNext));
+                    // 显示当前等级和经验
+                    int currentLevel = levelManager.getPlayerLevel(freshData);
+                    long newExp = levelManager.getPlayerExperience(freshData);
+                    sender.sendMessage("§a当前等级: §e" + currentLevel);
+                    long expToNext = levelManager.getExperienceToNextLevel(freshData);
+                    if (expToNext > 0) {
+                        sender.sendMessage("§a当前经验: §e" + ExperienceFormatter.formatExperience(newExp, expToNext));
+                    } else {
+                        sender.sendMessage("§a当前经验: §e" + ExperienceFormatter.formatExperience(newExp));
+                    }
                     if (!isSelf) {
                         targetPlayer.sendMessage("§a你获得了 §e" + exp + " §a点经验");
                     }
