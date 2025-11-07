@@ -47,9 +47,11 @@ public class NekoLevelPlaceholderExpansion extends PlaceholderExpansion {
             case "level":
                 return String.valueOf(levelManager.getPlayerLevel(playerData));
             case "exp":
-                return String.valueOf(levelManager.getPlayerExperience(playerData));
+                long currentExp = levelManager.getPlayerExperience(playerData);
+                long expToNext = levelManager.getExperienceToNextLevel(playerData);
+                return ExperienceFormatter.formatExperience(currentExp, expToNext);
             case "next_exp":
-                return String.valueOf(levelManager.getExperienceToNextLevel(playerData));
+                return ExperienceFormatter.formatExperience(levelManager.getExperienceToNextLevel(playerData));
             case "progress":
                 // 创建10个字符的进度条，使用方形符号
                 double progress = levelManager.getLevelProgress(playerData);

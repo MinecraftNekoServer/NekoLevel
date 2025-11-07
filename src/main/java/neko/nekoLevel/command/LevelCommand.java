@@ -1,5 +1,6 @@
 package neko.nekoLevel.command;
 
+import neko.nekoLevel.ExperienceFormatter;
 import neko.nekoLevel.LevelManager;
 import neko.nekoLevel.NekoLevel;
 import org.bukkit.command.Command;
@@ -64,9 +65,10 @@ public class LevelCommand implements CommandExecutor {
                 // 显示当前等级和经验
                 LevelManager.PlayerData playerData = levelManager.getPlayerData(player.getUniqueId(), player.getName());
                 int level = levelManager.getPlayerLevel(playerData);
-                long experience = levelManager.getPlayerExperience(playerData);
+                long currentExp = levelManager.getPlayerExperience(playerData);
+                long expToNext = levelManager.getExperienceToNextLevel(playerData);
                 player.sendMessage("§a当前等级: §e" + level);
-                player.sendMessage("§a当前经验: §e" + experience);
+                player.sendMessage("§a当前经验: §e" + ExperienceFormatter.formatExperience(currentExp, expToNext));
                 // 显示指令优先级
                 int commandPriority = playerData.getCommandPriority();
                 player.sendMessage("§a指令优先级: §e" + commandPriority);
@@ -221,7 +223,8 @@ public class LevelCommand implements CommandExecutor {
                     int currentLevel = levelManager.getPlayerLevel(freshData);
                     long newExp = levelManager.getPlayerExperience(freshData);
                     sender.sendMessage("§a当前等级: §e" + currentLevel);
-                    sender.sendMessage("§a当前经验: §e" + newExp);
+                    long expToNext = levelManager.getExperienceToNextLevel(freshData);
+                    sender.sendMessage("§a当前经验: §e" + ExperienceFormatter.formatExperience(newExp, expToNext));
                     if (!isSelf) {
                         targetPlayer.sendMessage("§a你获得了 §e" + exp + " §a点经验");
                     }
