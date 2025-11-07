@@ -357,5 +357,17 @@ public class LevelManager {
         data.removeCatFood(catFood);
 
     }
+    
+    /**
+     * 奖励玩家猫粮（带提示消息）
+     */
+    public void rewardPlayerCatFood(PlayerData data, long catFood) {
+        data.addCatFood(catFood);
+        // 在游戏中发送提示消息
+        org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(data.getUuid());
+        if (player != null && player.isOnline()) {
+            player.sendMessage("§a恭喜你获得 §e" + catFood + " §a个猫粮！当前猫粮: §e" + data.getCatFood());
+        }
+    }
 
 }
