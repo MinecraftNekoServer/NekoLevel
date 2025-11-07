@@ -8,6 +8,7 @@ public final class NekoLevel extends JavaPlugin {
     private DatabaseManager databaseManager;
     private LevelManager levelManager;
     private NekoLevelPlaceholderExpansion placeholderExpansion;
+    private NekoLevelAPI nekoLevelAPI;
 
     @Override
     public void onEnable() {
@@ -17,6 +18,9 @@ public final class NekoLevel extends JavaPlugin {
         
         // 初始化等级管理器
         levelManager = new LevelManager(this, databaseManager);
+        
+        // 初始化API
+        nekoLevelAPI = new NekoLevelAPI(this);
         
         // 注册指令
         getCommand("nekolevel").setExecutor(new LevelCommand(this));
@@ -54,5 +58,14 @@ public final class NekoLevel extends JavaPlugin {
     
     public LevelManager getLevelManager() {
         return levelManager;
+    }
+    
+    /**
+     * 获取NekoLevel API实例
+     * 
+     * @return NekoLevelAPI实例
+     */
+    public NekoLevelAPI getNekoLevelAPI() {
+        return nekoLevelAPI;
     }
 }

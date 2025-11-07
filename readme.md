@@ -72,3 +72,31 @@ CREATE TABLE player_levels (
 
 - 作者: 不穿胖次の小奶猫
 - 网站: https://cnmsb.xin/
+
+## API 使用说明
+
+其他插件可以通过 NekoLevelAPI 使用本插件的功能。
+
+### 获取 API 实例
+
+```java
+NekoLevel nekoLevel = (NekoLevel) Bukkit.getPluginManager().getPlugin("NekoLevel");
+if (nekoLevel != null && nekoLevel.isEnabled()) {
+    NekoLevelAPI api = nekoLevel.getNekoLevelAPI();
+    // 使用API功能
+}
+```
+
+### API 功能
+
+#### 猫粮管理
+- `getCatFood(Player player)` - 获取玩家猫粮数量
+- `setCatFood(Player player, long amount)` - 设置玩家猫粮数量
+- `addCatFood(Player player, long amount)` - 增加玩家猫粮
+- `removeCatFood(Player player, long amount)` - 扣除玩家猫粮（返回是否成功）
+- `hasEnoughCatFood(Player player, long amount)` - 检查玩家是否有足够猫粮
+- `rewardCatFood(Player player, long amount)` - 奖励玩家猫粮（带提示）
+
+#### 等级管理
+- `getPlayerLevel(Player player)` - 获取玩家等级
+- `getPlayerExperience(Player player)` - 获取玩家经验

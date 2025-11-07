@@ -358,16 +358,72 @@ public class LevelManager {
 
     }
     
-    /**
-     * 奖励玩家猫粮（带提示消息）
-     */
-    public void rewardPlayerCatFood(PlayerData data, long catFood) {
-        data.addCatFood(catFood);
-        // 在游戏中发送提示消息
-        org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(data.getUuid());
-        if (player != null && player.isOnline()) {
-            player.sendMessage("§a恭喜你获得 §e" + catFood + " §a个猫粮！当前猫粮: §e" + data.getCatFood());
-        }
+    /**
+     * 奖励玩家猫粮（带提示消息）
+     */
+    public void rewardPlayerCatFood(PlayerData data, long catFood) {
+        data.addCatFood(catFood);
+        // 在游戏中发送提示消息
+        org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(data.getUuid());
+        if (player != null && player.isOnline()) {
+            player.sendMessage("§a恭喜你获得 §e" + catFood + " §a个猫粮！当前猫粮: §e" + data.getCatFood());
+        }
+    }
+    
+    /**
+     * 查询玩家猫粮数量
+     * 
+     * @param data 玩家数据
+     * @return 玩家当前拥有的猫粮数量
+     */
+    public long getCatFood(PlayerData data) {
+        return data.getCatFood();
+    }
+    
+    /**
+     * 设置玩家猫粮数量
+     * 
+     * @param data 玩家数据
+     * @param amount 要设置的猫粮数量
+     */
+    public void setCatFood(PlayerData data, long amount) {
+        data.setCatFood(amount);
+    }
+    
+    /**
+     * 增加玩家猫粮
+     * 
+     * @param data 玩家数据
+     * @param amount 要增加的猫粮数量
+     */
+    public void addCatFood(PlayerData data, long amount) {
+        data.addCatFood(amount);
+    }
+    
+    /**
+     * 扣除玩家猫粮
+     * 
+     * @param data 玩家数据
+     * @param amount 要扣除的猫粮数量
+     * @return 是否成功扣除（如果玩家猫粮不足则返回false）
+     */
+    public boolean removeCatFood(PlayerData data, long amount) {
+        if (data.getCatFood() >= amount) {
+            data.removeCatFood(amount);
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * 检查玩家是否有足够的猫粮
+     * 
+     * @param data 玩家数据
+     * @param amount 需要检查的猫粮数量
+     * @return 是否有足够的猫粮
+     */
+    public boolean hasEnoughCatFood(PlayerData data, long amount) {
+        return data.getCatFood() >= amount;
     }
 
 }
