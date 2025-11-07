@@ -17,39 +17,43 @@ public class LevelCommand implements CommandExecutor {
         this.levelManager = plugin.getLevelManager();
     }
     
-    /**
-     * 检查玩家是否可以升级
-     */
-    private void checkLevelUp(LevelManager.PlayerData playerData) {
-        long currentExp = levelManager.getPlayerExperience(playerData);
-        long expToNextLevel = levelManager.getExperienceToNextLevel(playerData);
-        int currentLevel = levelManager.getPlayerLevel(playerData);
-        int maxLevel = plugin.getConfig().getInt("max-level", 5000);
-        
-        // 如果已达到最高等级，不升级
-        if (currentLevel >= maxLevel) {
-            return;
-        }
-        
-        // 如果当前经验大于等于升级所需经验，则升级
-        if (currentExp >= expToNextLevel && expToNextLevel > 0) {
-            // 升级并清空经验
-            levelManager.setPlayerLevel(playerData, currentLevel + 1);
-            levelManager.setPlayerExperience(playerData, currentExp - expToNextLevel);
-            
-            // 获取玩家对象
-            Player player = plugin.getServer().getPlayer(playerData.getUuid());
-            if (player != null && player.isOnline()) {
-                // 发送升级消息
-                player.sendMessage("§a恭喜你升级了！当前等级: §e" + (currentLevel + 1));
-                
-                // 播放经验音效
-                player.playSound(player.getLocation(), "entity.player.levelup", 1.0f, 1.0f);
-            }
-            
-            // 递归检查是否还能继续升级
-            checkLevelUp(playerData);
-        }
+    /**
+     * 检查玩家是否可以升级
+     */
+    private void checkLevelUp(LevelManager.PlayerData playerData) {
+        long currentExp = levelManager.getPlayerExperience(playerData);
+        long expToNextLevel = levelManager.getExperienceToNextLevel(playerData);
+        int currentLevel = levelManager.getPlayerLevel(playerData);
+        int maxLevel = plugin.getConfig().getInt("max-level", 5000);
+        
+        // 如果已达到最高等级，不升级
+        if (currentLevel >= maxLevel) {
+            return;
+        }
+        
+        // 如果当前经验大于等于升级所需经验，则升级
+        if (currentExp >= expToNextLevel && expToNextLevel > 0) {
+            // 升级并清空经验
+            levelManager.setPlayerLevel(playerData, currentLevel + 1);
+            levelManager.setPlayerExperience(playerData, currentExp - expToNextLevel);
+            
+            // 获取玩家对象
+            Player player = plugin.getServer().getPlayer(playerData.getUuid());
+            if (player != null && player.isOnline()) {
+                // 发送升级消息
+                player.sendMessage("§a恭喜你升级了！当前等级: §e" + (currentLevel + 1));
+                
+                // 每次升级奖励猫粮（等级越高奖励越多，无上限）
+                long catFoodReward = 5L + (currentLevel + 1) * 5;
+                levelManager.rewardPlayerCatFood(playerData, catFoodReward);
+                
+                // 播放经验音效
+                player.playSound(player.getLocation(), "entity.player.levelup", 1.0f, 1.0f);
+            }
+            
+            // 递归检查是否还能继续升级
+            checkLevelUp(playerData);
+        }
     }
 
     @Override
