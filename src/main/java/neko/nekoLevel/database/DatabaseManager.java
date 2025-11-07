@@ -35,42 +35,58 @@ public class DatabaseManager {
         password = plugin.getConfig().getString("database.password", "");
     }
 
-    private void initializeDatabase() {
-        try {
-            // 使用MySQL数据库
-            String url = "jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&serverTimezone=UTC";
-            connection = DriverManager.getConnection(url, username, password);
-            
-            // 创建玩家等级表（添加指令优先级字段）
-            String createTableSQL = "CREATE TABLE IF NOT EXISTS player_levels (" +
-                    "uuid VARCHAR(36) PRIMARY KEY, " +
-                    "name VARCHAR(16) NOT NULL, " +
-                    "level INTEGER NOT NULL DEFAULT 1, " +
-                    "experience BIGINT NOT NULL DEFAULT 0, " +
-                    "command_priority INTEGER NOT NULL DEFAULT 0" +
-                    ");";
-            
-            try (Statement stmt = connection.createStatement()) {
-                stmt.execute(createTableSQL);
-            }
-            
-            // 检查并添加command_priority列（如果不存在）
-            String checkColumnSQL = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
-                    "WHERE TABLE_SCHEMA = '" + database + "' AND TABLE_NAME = 'player_levels' " +
-                    "AND COLUMN_NAME = 'command_priority'";
-            
-            try (Statement stmt = connection.createStatement();
-                 ResultSet rs = stmt.executeQuery(checkColumnSQL)) {
-                
-                if (!rs.next()) {
-                    // 添加command_priority列
-                    String alterTableSQL = "ALTER TABLE player_levels ADD COLUMN command_priority INTEGER NOT NULL DEFAULT 0";
-                    stmt.execute(alterTableSQL);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+    private void initializeDatabase() {
+        try {
+            // 使用MySQL数据库
+            String url = "jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&serverTimezone=UTC";
+            connection = DriverManager.getConnection(url, username, password);
+            
+            // 创建玩家等级表（添加指令优先级字段和猫粮字段）
+            String createTableSQL = "CREATE TABLE IF NOT EXISTS player_levels (" +
+                    "uuid VARCHAR(36) PRIMARY KEY, " +
+                    "name VARCHAR(16) NOT NULL, " +
+                    "level INTEGER NOT NULL DEFAULT 1, " +
+                    "experience BIGINT NOT NULL DEFAULT 0, " +
+                    "cat_food BIGINT NOT NULL DEFAULT 0, " +
+                    "command_priority INTEGER NOT NULL DEFAULT 0" +
+                    ");";
+            
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute(createTableSQL);
+            }
+            
+            // 检查并添加command_priority列（如果不存在）
+            String checkPriorityColumnSQL = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = '" + database + "' AND TABLE_NAME = 'player_levels' " +
+                    "AND COLUMN_NAME = 'command_priority'";
+            
+            try (Statement stmt = connection.createStatement();
+                 ResultSet rs = stmt.executeQuery(checkPriorityColumnSQL)) {
+                
+                if (!rs.next()) {
+                    // 添加command_priority列
+                    String alterTableSQL = "ALTER TABLE player_levels ADD COLUMN command_priority INTEGER NOT NULL DEFAULT 0";
+                    stmt.execute(alterTableSQL);
+                }
+            }
+            
+            // 检查并添加cat_food列（如果不存在）
+            String checkCatFoodColumnSQL = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = '" + database + "' AND TABLE_NAME = 'player_levels' " +
+                    "AND COLUMN_NAME = 'cat_food'";
+            
+            try (Statement stmt = connection.createStatement();
+                 ResultSet rs = stmt.executeQuery(checkCatFoodColumnSQL)) {
+                
+                if (!rs.next()) {
+                    // 添加cat_food列
+                    String alterTableSQL = "ALTER TABLE player_levels ADD COLUMN cat_food BIGINT NOT NULL DEFAULT 0";
+                    stmt.execute(alterTableSQL);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public Connection getConnection() {

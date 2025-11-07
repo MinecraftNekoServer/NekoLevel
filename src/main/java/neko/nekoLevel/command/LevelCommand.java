@@ -63,18 +63,19 @@ public class LevelCommand implements CommandExecutor {
             
             if (args.length == 0) {
                 // 显示当前等级和经验
-                LevelManager.PlayerData playerData = levelManager.getPlayerData(player.getUniqueId(), player.getName());
-                int level = levelManager.getPlayerLevel(playerData);
-                long currentExp = levelManager.getPlayerExperience(playerData);
-                long expToNext = levelManager.getExperienceToNextLevel(playerData);
-                player.sendMessage("§a当前等级: §e" + level);
-                if (expToNext > 0) {
-                    player.sendMessage("§a当前经验: §e" + ExperienceFormatter.formatExperience(currentExp, expToNext));
-                } else {
-                    player.sendMessage("§a当前经验: §e" + ExperienceFormatter.formatExperience(currentExp));
-                }
-                // 显示指令优先级
-                int commandPriority = playerData.getCommandPriority();
+                LevelManager.PlayerData playerData = levelManager.getPlayerData(player.getUniqueId(), player.getName());
+                int level = levelManager.getPlayerLevel(playerData);
+                long currentExp = levelManager.getPlayerExperience(playerData);
+                long expToNext = levelManager.getExperienceToNextLevel(playerData);
+                player.sendMessage("§a当前等级: §e" + level);
+                if (expToNext > 0) {
+                    player.sendMessage("§a当前经验: §e" + ExperienceFormatter.formatExperience(currentExp, expToNext));
+                } else {
+                    player.sendMessage("§a当前经验: §e" + ExperienceFormatter.formatExperience(currentExp));
+                }
+                player.sendMessage("§a猫粮数量: §e" + levelManager.getPlayerCatFood(playerData));
+                // 显示指令优先级
+                int commandPriority = playerData.getCommandPriority();
                 player.sendMessage("§a指令优先级: §e" + commandPriority);
                 return true;
             }
@@ -223,21 +224,79 @@ public class LevelCommand implements CommandExecutor {
                     levelManager.savePlayerData(freshData);
                     sender.sendMessage("§a已将玩家 " + targetPlayerName + " 的经验增加了: §e" + exp);
                     
-                    // 显示当前等级和经验
-                    int currentLevel = levelManager.getPlayerLevel(freshData);
-                    long newExp = levelManager.getPlayerExperience(freshData);
-                    sender.sendMessage("§a当前等级: §e" + currentLevel);
-                    long expToNext = levelManager.getExperienceToNextLevel(freshData);
-                    if (expToNext > 0) {
-                        sender.sendMessage("§a当前经验: §e" + ExperienceFormatter.formatExperience(newExp, expToNext));
-                    } else {
-                        sender.sendMessage("§a当前经验: §e" + ExperienceFormatter.formatExperience(newExp));
+                    // 显示当前等级和经验
+                    int currentLevel = levelManager.getPlayerLevel(freshData);
+                    long newExp = levelManager.getPlayerExperience(freshData);
+                    sender.sendMessage("§a当前等级: §e" + currentLevel);
+                    long expToNext = levelManager.getExperienceToNextLevel(freshData);
+                    if (expToNext > 0) {
+                        sender.sendMessage("§a当前经验: §e" + ExperienceFormatter.formatExperience(newExp, expToNext));
+                    } else {
+                        sender.sendMessage("§a当前经验: §e" + ExperienceFormatter.formatExperience(newExp));
                     }
                     if (!isSelf) {
                         targetPlayer.sendMessage("§a你获得了 §e" + exp + " §a点经验");
                     }
                 } catch (NumberFormatException e) {
                     sender.sendMessage("§c无效的经验数值");
+                }
+                break;
+                
+            case "setcatfood":
+                if (args.length < 2) {
+                    sender.sendMessage("§c用法: /nekolevel setcatfood <玩家名> <猫粮>");
+                    return true;
+                }
+                
+                if (sender instanceof Player && !((Player) sender).hasPermission("nekolevel.admin")) {
+                    sender.sendMessage("§c你没有权限使用此命令");
+                    return true;
+                }
+                
+                try {
+                    long catFood = Long.parseLong(args[args.length == 2 ? 1 : 2]);
+                    // 从数据库重新加载数据以确保实时性
+                    LevelManager.PlayerData freshData = levelManager.getPlayerData(targetPlayer.getUniqueId(), targetPlayerName);
+                    levelManager.setPlayerCatFood(freshData, catFood);
+                    levelManager.savePlayerData(freshData);
+                    sender.sendMessage("§a已将玩家 " + targetPlayerName + " 的猫粮设置为: §e" + catFood);
+                    
+                    if (!isSelf) {
+                        targetPlayer.sendMessage("§a恭喜你，获得了 §e" + catFood + " §a个猫粮");
+                    }
+                } catch (NumberFormatException e) {
+                    sender.sendMessage("§c无效的猫粮数值");
+                }
+                break;
+                
+            case "addcatfood":
+                if (args.length < 2) {
+                    sender.sendMessage("§c用法: /nekolevel addcatfood <玩家名> <猫粮>");
+                    return true;
+                }
+                
+                if (sender instanceof Player && !((Player) sender).hasPermission("nekolevel.admin")) {
+                    sender.sendMessage("§c你没有权限使用此命令");
+                    return true;
+                }
+                
+                try {
+                    long catFood = Long.parseLong(args[args.length == 2 ? 1 : 2]);
+                    // 从数据库重新加载数据以确保实时性
+                    LevelManager.PlayerData freshData = levelManager.getPlayerData(targetPlayer.getUniqueId(), targetPlayerName);
+                    long currentCatFood = levelManager.getPlayerCatFood(freshData);
+                    levelManager.setPlayerCatFood(freshData, currentCatFood + catFood);
+                    levelManager.savePlayerData(freshData);
+                    sender.sendMessage("§a已将玩家 " + targetPlayerName + " 的猫粮增加了: §e" + catFood);
+                    
+                    // 显示当前猫粮
+                    long newCatFood = levelManager.getPlayerCatFood(freshData);
+                    sender.sendMessage("§a当前猫粮: §e" + newCatFood);
+                    if (!isSelf) {
+                        targetPlayer.sendMessage("§a你获得了 §e" + catFood + " §a个猫粮");
+                    }
+                } catch (NumberFormatException e) {
+                    sender.sendMessage("§c无效的猫粮数值");
                 }
                 break;
                 
@@ -259,6 +318,8 @@ public class LevelCommand implements CommandExecutor {
                 sender.sendMessage("§e/nekolevel addlevel <玩家名> <等级> - 增加等级");
                 sender.sendMessage("§e/nekolevel setexp <玩家名> <经验> - 设置经验");
                 sender.sendMessage("§e/nekolevel addexp <玩家名> <经验> - 增加经验");
+                sender.sendMessage("§e/nekolevel setcatfood <玩家名> <猫粮> - 设置猫粮");
+                sender.sendMessage("§e/nekolevel addcatfood <玩家名> <猫粮> - 增加猫粮");
                 sender.sendMessage("§e/nekolevel reload - 重新加载配置文件");
                 break;
         }

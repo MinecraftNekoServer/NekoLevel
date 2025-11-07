@@ -20,31 +20,69 @@ public class LevelManager {
     }
     
     public static class PlayerData {
+
         private int level;
+
         private long experience;
+
+        private long catFood;
+
         private int commandPriority;
+
         private final String name;
+
         private final UUID uuid;
+
         
-        public PlayerData(UUID uuid, String name, int level, long experience, int commandPriority) {
+
+        public PlayerData(UUID uuid, String name, int level, long experience, long catFood, int commandPriority) {
+
             this.uuid = uuid;
+
             this.name = name;
+
             this.level = level;
+
             this.experience = experience;
+
+            this.catFood = catFood;
+
             this.commandPriority = commandPriority;
+
         }
+
         
+
         // Getters and setters
+
         public int getLevel() { return level; }
+
         public long getExperience() { return experience; }
+
+        public long getCatFood() { return catFood; }
+
         public int getCommandPriority() { return commandPriority; }
+
         public String getName() { return name; }
+
         public UUID getUuid() { return uuid; }
+
         
+
         public void setLevel(int level) { this.level = level; }
+
         public void setExperience(long experience) { this.experience = experience; }
+
+        public void setCatFood(long catFood) { this.catFood = catFood; }
+
         public void setCommandPriority(int priority) { this.commandPriority = priority; }
+
         public void addExperience(long exp) { this.experience += exp; }
+
+        public void addCatFood(long food) { this.catFood += food; }
+
+        public void removeCatFood(long food) { this.catFood = Math.max(0, this.catFood - food); }
+
     }
     
     /**
@@ -56,67 +94,129 @@ public class LevelManager {
     }
     
     /**
+
      * 从数据库加载玩家数据
+
      */
+
     private PlayerData loadPlayerData(UUID uuid, String name) {
-        String sql = "SELECT level, experience, command_priority FROM player_levels WHERE uuid = ?";
+
+        String sql = "SELECT level, experience, cat_food, command_priority FROM player_levels WHERE uuid = ?";
+
         try (Connection conn = databaseManager.getConnection();
+
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             
+
             stmt.setString(1, uuid.toString());
+
             ResultSet rs = stmt.executeQuery();
+
             
+
             if (rs.next()) {
+
                 int level = rs.getInt("level");
+
                 long experience = rs.getLong("experience");
+
+                long catFood = rs.getLong("cat_food");
+
                 int commandPriority = rs.getInt("command_priority");
-                return new PlayerData(uuid, name, level, experience, commandPriority);
+
+                return new PlayerData(uuid, name, level, experience, catFood, commandPriority);
+
             } else {
+
                 // 玩家不存在，创建新记录
+
                 return createNewPlayerData(uuid, name);
+
             }
+
         } catch (SQLException e) {
+
             e.printStackTrace();
+
             return null;
+
         }
+
     }
     
     /**
+
      * 创建新玩家数据
+
      */
+
     private PlayerData createNewPlayerData(UUID uuid, String name) {
-        String sql = "INSERT INTO player_levels (uuid, name, level, experience, command_priority) VALUES (?, ?, 1, 0, 0)";
+
+        String sql = "INSERT INTO player_levels (uuid, name, level, experience, cat_food, command_priority) VALUES (?, ?, 1, 0, 0, 0)";
+
         try (Connection conn = databaseManager.getConnection();
+
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             
+
             stmt.setString(1, uuid.toString());
+
             stmt.setString(2, name);
+
             stmt.executeUpdate();
+
             
-            return new PlayerData(uuid, name, 1, 0, 0);
+
+            return new PlayerData(uuid, name, 1, 0, 0, 0);
+
         } catch (SQLException e) {
+
             e.printStackTrace();
+
             return null;
+
         }
+
     }
     
     /**
+
      * 保存玩家数据到数据库
+
      */
+
     public void savePlayerData(PlayerData data) {
-        String sql = "INSERT INTO player_levels (uuid, name, level, experience) VALUES (?, ?, ?, ?) " +
-                     "ON DUPLICATE KEY UPDATE name = VALUES(name), level = VALUES(level), experience = VALUES(experience)";
+
+        String sql = "INSERT INTO player_levels (uuid, name, level, experience, cat_food) VALUES (?, ?, ?, ?, ?) " +
+
+                     "ON DUPLICATE KEY UPDATE name = VALUES(name), level = VALUES(level), experience = VALUES(experience), cat_food = VALUES(cat_food)";
+
         try (Connection conn = databaseManager.getConnection();
+
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+
             
+
             stmt.setString(1, data.getUuid().toString());
+
             stmt.setString(2, data.getName());
+
             stmt.setInt(3, data.getLevel());
+
             stmt.setLong(4, data.getExperience());
+
+            stmt.setLong(5, data.getCatFood());
+
             stmt.executeUpdate();
+
         } catch (SQLException e) {
+
             e.printStackTrace();
+
         }
+
     }
     
     /**
@@ -187,11 +287,75 @@ public class LevelManager {
     }
     
     /**
+
      * 设置玩家经验
+
      */
+
     public void setPlayerExperience(PlayerData data, long experience) {
+
         if (experience >= 0) {
+
             data.setExperience(experience);
+
         }
+
     }
+
+    
+
+    /**
+
+     * 获取玩家猫粮数量
+
+     */
+
+    public long getPlayerCatFood(PlayerData data) {
+
+        return data.getCatFood();
+
+    }
+
+    
+
+    /**
+
+     * 设置玩家猫粮数量
+
+     */
+
+    public void setPlayerCatFood(PlayerData data, long catFood) {
+
+        data.setCatFood(catFood);
+
+    }
+
+    
+
+    /**
+
+     * 增加玩家猫粮
+
+     */
+
+    public void addPlayerCatFood(PlayerData data, long catFood) {
+
+        data.addCatFood(catFood);
+
+    }
+
+    
+
+    /**
+
+     * 减少玩家猫粮
+
+     */
+
+    public void removePlayerCatFood(PlayerData data, long catFood) {
+
+        data.removeCatFood(catFood);
+
+    }
+
 }
