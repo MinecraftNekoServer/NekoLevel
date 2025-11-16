@@ -156,7 +156,25 @@ public class DatabaseManager {
             stmt.setString(2, uuid);
             stmt.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            // 如果是连接关闭异常，尝试重新初始化数据库连接后再试一次
+            if (e.getMessage().contains("No operations allowed after connection closed")) {
+                try {
+                    // 重新初始化数据库连接
+                    closeConnection();
+                    // 重新获取连接并执行操作
+                    try (Connection conn = getConnection();
+                         PreparedStatement stmt = conn.prepareStatement(sql)) {
+                        
+                        stmt.setInt(1, priority);
+                        stmt.setString(2, uuid);
+                        stmt.executeUpdate();
+                    }
+                } catch (SQLException retryException) {
+                    retryException.printStackTrace();
+                }
+            } else {
+                e.printStackTrace();
+            }
         }
     }
     
@@ -175,7 +193,28 @@ public class DatabaseManager {
                 return rs.getInt("command_priority");
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            // 如果是连接关闭异常，尝试重新初始化数据库连接后再试一次
+            if (e.getMessage().contains("No operations allowed after connection closed")) {
+                try {
+                    // 重新初始化数据库连接
+                    closeConnection();
+                    // 重新获取连接并执行操作
+                    try (Connection conn = getConnection();
+                         PreparedStatement stmt = conn.prepareStatement(sql)) {
+                        
+                        stmt.setString(1, uuid);
+                        ResultSet rs = stmt.executeQuery();
+                        
+                        if (rs.next()) {
+                            return rs.getInt("command_priority");
+                        }
+                    }
+                } catch (SQLException retryException) {
+                    retryException.printStackTrace();
+                }
+            } else {
+                e.printStackTrace();
+            }
         }
         return 0; // 默认优先级
     }

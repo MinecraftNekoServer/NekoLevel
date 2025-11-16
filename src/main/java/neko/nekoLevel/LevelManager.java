@@ -183,7 +183,63 @@ public class LevelManager {
 
         } catch (SQLException e) {
 
-            e.printStackTrace();
+            // 如果是连接关闭异常，尝试重新初始化数据库连接后再试一次
+
+            if (e.getMessage().contains("No operations allowed after connection closed")) {
+
+                try {
+
+                    // 重新初始化数据库连接
+
+                    databaseManager.closeConnection();
+
+                    // 重新获取连接
+
+                    try (Connection conn = databaseManager.getConnection();
+
+                         PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+                        
+
+                        stmt.setString(1, uuid.toString());
+
+                        ResultSet rs = stmt.executeQuery();
+
+                        
+
+                        if (rs.next()) {
+
+                            int level = rs.getInt("level");
+
+                            long experience = rs.getLong("experience");
+
+                            long catFood = rs.getLong("cat_food");
+
+                            int commandPriority = rs.getInt("command_priority");
+
+                            return new PlayerData(uuid, name, level, experience, catFood, commandPriority);
+
+                        } else {
+
+                            // 玩家不存在，创建新记录
+
+                            return createNewPlayerData(uuid, name);
+
+                        }
+
+                    }
+
+                } catch (SQLException retryException) {
+
+                    retryException.printStackTrace();
+
+                }
+
+            } else {
+
+                e.printStackTrace();
+
+            }
 
             return null;
 
@@ -219,7 +275,47 @@ public class LevelManager {
 
         } catch (SQLException e) {
 
-            e.printStackTrace();
+            // 如果是连接关闭异常，尝试重新初始化数据库连接后再试一次
+
+            if (e.getMessage().contains("No operations allowed after connection closed")) {
+
+                try {
+
+                    // 重新初始化数据库连接
+
+                    databaseManager.closeConnection();
+
+                    // 重新获取连接并执行操作
+
+                    try (Connection conn = databaseManager.getConnection();
+
+                         PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+                        
+
+                        stmt.setString(1, uuid.toString());
+
+                        stmt.setString(2, name);
+
+                        stmt.executeUpdate();
+
+                        
+
+                        return new PlayerData(uuid, name, 1, 0, 0, 0);
+
+                    }
+
+                } catch (SQLException retryException) {
+
+                    retryException.printStackTrace();
+
+                }
+
+            } else {
+
+                e.printStackTrace();
+
+            }
 
             return null;
 
