@@ -10,3 +10,8 @@ database:
   database: "neko_level"
   username: "root"
   password: "wcjs123"
+
+# 缓存配置
+cache:
+  # 缓存超时时间（毫秒）- 默认1小时 (3600000毫秒)
+  timeout: 3600000

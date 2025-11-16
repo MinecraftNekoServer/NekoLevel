@@ -28,6 +28,9 @@ public final class NekoLevel extends JavaPlugin {
         // 注册变量占位符
         registerPlaceholderExpansion();
         
+        // 注册事件监听器
+        getServer().getPluginManager().registerEvents(new PlayerEventListener(this), this);
+        
         // 保存默认配置
         saveDefaultConfig();
     }

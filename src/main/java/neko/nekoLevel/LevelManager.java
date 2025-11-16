@@ -9,11 +9,13 @@ public class LevelManager {
     private final NekoLevel plugin;
     private final DatabaseManager databaseManager;
     private final FileConfiguration config;
+    private final PlayerCache playerCache;
     
     public LevelManager(NekoLevel plugin, DatabaseManager databaseManager) {
         this.plugin = plugin;
         this.databaseManager = databaseManager;
         this.config = plugin.getConfig();
+        this.playerCache = new PlayerCache(plugin);
         
         // 初始化配置
         plugin.saveDefaultConfig();
@@ -32,6 +34,8 @@ public class LevelManager {
         private final String name;
 
         private final UUID uuid;
+        
+        private long lastAccessTime; // 记录最后访问时间用于缓存管理
 
         
 
@@ -48,6 +52,8 @@ public class LevelManager {
             this.catFood = catFood;
 
             this.commandPriority = commandPriority;
+
+            this.lastAccessTime = System.currentTimeMillis(); // 初始化最后访问时间
 
         }
 
@@ -82,15 +88,55 @@ public class LevelManager {
         public void addCatFood(long food) { this.catFood += food; }
 
         public void removeCatFood(long food) { this.catFood = Math.max(0, this.catFood - food); }
-
+        
+        // 以下方法用于缓存管理
+        public long getLastAccessTime() {
+            return lastAccessTime;
+        }
+        
+        public void updateLastAccessTime() {
+            this.lastAccessTime = System.currentTimeMillis();
+        }
     }
     
     /**
      * 获取玩家数据
      */
     public PlayerData getPlayerData(UUID uuid, String name) {
-        // 直接从数据库加载，不使用内存缓存
-        return loadPlayerData(uuid, name);
+        // 首先检查缓存中是否存在玩家数据
+        PlayerData cachedData = playerCache.getPlayerData(uuid);
+        if (cachedData != null) {
+            return cachedData;
+        }
+        
+        // 缓存中没有，从数据库加载
+        PlayerData data = loadPlayerData(uuid, name);
+        if (data != null) {
+            // 将数据添加到缓存
+            playerCache.addPlayerData(uuid, data);
+        }
+        return data;
+    }
+    
+    /**
+     * 从缓存中获取玩家数据（不访问数据库）
+     */
+    public PlayerData getCachedPlayerData(UUID uuid) {
+        return playerCache.getPlayerData(uuid);
+    }
+    
+    /**
+     * 将玩家数据从缓存中移除
+     */
+    public void removePlayerDataFromCache(UUID uuid) {
+        playerCache.removePlayerData(uuid);
+    }
+    
+    /**
+     * 清空所有缓存
+     */
+    public void clearCache() {
+        playerCache.clearCache();
     }
     
     /**
@@ -210,6 +256,9 @@ public class LevelManager {
             stmt.setLong(5, data.getCatFood());
 
             stmt.executeUpdate();
+            
+            // 同时更新缓存中的数据
+            playerCache.addPlayerData(data.getUuid(), data);
 
         } catch (SQLException e) {
 
@@ -358,72 +407,72 @@ public class LevelManager {
 
     }
     
-    /**
-     * 奖励玩家猫粮（带提示消息）
-     */
-    public void rewardPlayerCatFood(PlayerData data, long catFood) {
-        data.addCatFood(catFood);
-        // 在游戏中发送提示消息
-        org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(data.getUuid());
-        if (player != null && player.isOnline()) {
-            player.sendMessage("§a恭喜你获得 §e" + catFood + " §a个猫粮！当前猫粮: §e" + data.getCatFood());
-        }
-    }
-    
-    /**
-     * 查询玩家猫粮数量
-     * 
-     * @param data 玩家数据
-     * @return 玩家当前拥有的猫粮数量
-     */
-    public long getCatFood(PlayerData data) {
-        return data.getCatFood();
-    }
-    
-    /**
-     * 设置玩家猫粮数量
-     * 
-     * @param data 玩家数据
-     * @param amount 要设置的猫粮数量
-     */
-    public void setCatFood(PlayerData data, long amount) {
-        data.setCatFood(amount);
-    }
-    
-    /**
-     * 增加玩家猫粮
-     * 
-     * @param data 玩家数据
-     * @param amount 要增加的猫粮数量
-     */
-    public void addCatFood(PlayerData data, long amount) {
-        data.addCatFood(amount);
-    }
-    
-    /**
-     * 扣除玩家猫粮
-     * 
-     * @param data 玩家数据
-     * @param amount 要扣除的猫粮数量
-     * @return 是否成功扣除（如果玩家猫粮不足则返回false）
-     */
-    public boolean removeCatFood(PlayerData data, long amount) {
-        if (data.getCatFood() >= amount) {
-            data.removeCatFood(amount);
-            return true;
-        }
-        return false;
-    }
-    
-    /**
-     * 检查玩家是否有足够的猫粮
-     * 
-     * @param data 玩家数据
-     * @param amount 需要检查的猫粮数量
-     * @return 是否有足够的猫粮
-     */
-    public boolean hasEnoughCatFood(PlayerData data, long amount) {
-        return data.getCatFood() >= amount;
+    /**
+     * 奖励玩家猫粮（带提示消息）
+     */
+    public void rewardPlayerCatFood(PlayerData data, long catFood) {
+        data.addCatFood(catFood);
+        // 在游戏中发送提示消息
+        org.bukkit.entity.Player player = org.bukkit.Bukkit.getPlayer(data.getUuid());
+        if (player != null && player.isOnline()) {
+            player.sendMessage("§a恭喜你获得 §e" + catFood + " §a个猫粮！当前猫粮: §e" + data.getCatFood());
+        }
+    }
+    
+    /**
+     * 查询玩家猫粮数量
+     * 
+     * @param data 玩家数据
+     * @return 玩家当前拥有的猫粮数量
+     */
+    public long getCatFood(PlayerData data) {
+        return data.getCatFood();
+    }
+    
+    /**
+     * 设置玩家猫粮数量
+     * 
+     * @param data 玩家数据
+     * @param amount 要设置的猫粮数量
+     */
+    public void setCatFood(PlayerData data, long amount) {
+        data.setCatFood(amount);
+    }
+    
+    /**
+     * 增加玩家猫粮
+     * 
+     * @param data 玩家数据
+     * @param amount 要增加的猫粮数量
+     */
+    public void addCatFood(PlayerData data, long amount) {
+        data.addCatFood(amount);
+    }
+    
+    /**
+     * 扣除玩家猫粮
+     * 
+     * @param data 玩家数据
+     * @param amount 要扣除的猫粮数量
+     * @return 是否成功扣除（如果玩家猫粮不足则返回false）
+     */
+    public boolean removeCatFood(PlayerData data, long amount) {
+        if (data.getCatFood() >= amount) {
+            data.removeCatFood(amount);
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * 检查玩家是否有足够的猫粮
+     * 
+     * @param data 玩家数据
+     * @param amount 需要检查的猫粮数量
+     * @return 是否有足够的猫粮
+     */
+    public boolean hasEnoughCatFood(PlayerData data, long amount) {
+        return data.getCatFood() >= amount;
     }
 
 }

@@ -6,6 +6,7 @@ import java.sql.*;
 public class DatabaseManager {
     private final NekoLevel plugin;
     private Connection connection;
+    private long lastAccessTime;
     
     // MySQL连接配置
     private String host;
@@ -13,6 +14,9 @@ public class DatabaseManager {
     private String database;
     private String username;
     private String password;
+    
+    // 连接超时时间（毫秒）- 默认7小时（比MySQL默认8小时短1小时）
+    private static final long CONNECTION_TIMEOUT = 25200000L; // 7小时 = 7 * 60 * 60 * 1000毫秒
     
     // 指令优先级常量
     public static final int COMMAND_PRIORITY_SETLEVEL = 100;
@@ -35,67 +39,97 @@ public class DatabaseManager {
         password = plugin.getConfig().getString("database.password", "");
     }
 
-    private void initializeDatabase() {
-        try {
-            // 使用MySQL数据库
-            String url = "jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&serverTimezone=UTC";
-            connection = DriverManager.getConnection(url, username, password);
-            
-            // 创建玩家等级表（添加指令优先级字段和猫粮字段）
-            String createTableSQL = "CREATE TABLE IF NOT EXISTS player_levels (" +
-                    "uuid VARCHAR(36) PRIMARY KEY, " +
-                    "name VARCHAR(16) NOT NULL, " +
-                    "level INTEGER NOT NULL DEFAULT 1, " +
-                    "experience BIGINT NOT NULL DEFAULT 0, " +
-                    "cat_food BIGINT NOT NULL DEFAULT 0, " +
-                    "command_priority INTEGER NOT NULL DEFAULT 0" +
-                    ");";
-            
-            try (Statement stmt = connection.createStatement()) {
-                stmt.execute(createTableSQL);
-            }
-            
-            // 检查并添加command_priority列（如果不存在）
-            String checkPriorityColumnSQL = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
-                    "WHERE TABLE_SCHEMA = '" + database + "' AND TABLE_NAME = 'player_levels' " +
-                    "AND COLUMN_NAME = 'command_priority'";
-            
-            try (Statement stmt = connection.createStatement();
-                 ResultSet rs = stmt.executeQuery(checkPriorityColumnSQL)) {
-                
-                if (!rs.next()) {
-                    // 添加command_priority列
-                    String alterTableSQL = "ALTER TABLE player_levels ADD COLUMN command_priority INTEGER NOT NULL DEFAULT 0";
-                    stmt.execute(alterTableSQL);
-                }
-            }
-            
-            // 检查并添加cat_food列（如果不存在）
-            String checkCatFoodColumnSQL = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
-                    "WHERE TABLE_SCHEMA = '" + database + "' AND TABLE_NAME = 'player_levels' " +
-                    "AND COLUMN_NAME = 'cat_food'";
-            
-            try (Statement stmt = connection.createStatement();
-                 ResultSet rs = stmt.executeQuery(checkCatFoodColumnSQL)) {
-                
-                if (!rs.next()) {
-                    // 添加cat_food列
-                    String alterTableSQL = "ALTER TABLE player_levels ADD COLUMN cat_food BIGINT NOT NULL DEFAULT 0";
-                    stmt.execute(alterTableSQL);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+    private void initializeDatabase() {
+        try {
+            // 使用MySQL数据库
+            String url = "jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&serverTimezone=UTC";
+            connection = DriverManager.getConnection(url, username, password);
+            
+            // 创建玩家等级表（添加指令优先级字段和猫粮字段）
+            String createTableSQL = "CREATE TABLE IF NOT EXISTS player_levels (" +
+                    "uuid VARCHAR(36) PRIMARY KEY, " +
+                    "name VARCHAR(16) NOT NULL, " +
+                    "level INTEGER NOT NULL DEFAULT 1, " +
+                    "experience BIGINT NOT NULL DEFAULT 0, " +
+                    "cat_food BIGINT NOT NULL DEFAULT 0, " +
+                    "command_priority INTEGER NOT NULL DEFAULT 0" +
+                    ");";
+            
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute(createTableSQL);
+            }
+            
+            // 检查并添加command_priority列（如果不存在）
+            String checkPriorityColumnSQL = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = '" + database + "' AND TABLE_NAME = 'player_levels' " +
+                    "AND COLUMN_NAME = 'command_priority'";
+            
+            try (Statement stmt = connection.createStatement();
+                 ResultSet rs = stmt.executeQuery(checkPriorityColumnSQL)) {
+                
+                if (!rs.next()) {
+                    // 添加command_priority列
+                    String alterTableSQL = "ALTER TABLE player_levels ADD COLUMN command_priority INTEGER NOT NULL DEFAULT 0";
+                    stmt.execute(alterTableSQL);
+                }
+            }
+            
+            // 检查并添加cat_food列（如果不存在）
+            String checkCatFoodColumnSQL = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = '" + database + "' AND TABLE_NAME = 'player_levels' " +
+                    "AND COLUMN_NAME = 'cat_food'";
+            
+            try (Statement stmt = connection.createStatement();
+                 ResultSet rs = stmt.executeQuery(checkCatFoodColumnSQL)) {
+                
+                if (!rs.next()) {
+                    // 添加cat_food列
+                    String alterTableSQL = "ALTER TABLE player_levels ADD COLUMN cat_food BIGINT NOT NULL DEFAULT 0";
+                    stmt.execute(alterTableSQL);
+                }
+            }
+            
+            // 设置最后访问时间
+            lastAccessTime = System.currentTimeMillis();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public Connection getConnection() {
         try {
-            if (connection == null || connection.isClosed()) {
+            // 检查连接是否为空、已关闭或超时
+            if (connection == null || connection.isClosed() || 
+                (System.currentTimeMillis() - lastAccessTime) > CONNECTION_TIMEOUT) {
+                // 如果连接已存在且未关闭，先关闭旧连接
+                if (connection != null && !connection.isClosed()) {
+                    connection.close();
+                }
+                // 重新初始化数据库连接
+                initializeDatabase();
+            }
+            
+            // 更新最后访问时间
+            lastAccessTime = System.currentTimeMillis();
+            
+            // 执行简单查询以验证连接是否仍然有效
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("SELECT 1");
+            } catch (SQLException e) {
+                // 如果验证失败，重新初始化连接
+                if (connection != null && !connection.isClosed()) {
+                    connection.close();
+                }
                 initializeDatabase();
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            // 如果出现异常，尝试重新初始化连接
+            try {
+                initializeDatabase();
+            } catch (Exception initException) {
+                initException.printStackTrace();
+            }
         }
         return connection;
     }
